@@ -30,34 +30,8 @@ ntfy:
         {{ if eq .Status "resolved" }}Resolved: {{ end }}{{ index .Annotations "summary" }}
       description: |
         {{ index .Annotations "description" }}
-      # Labels template - controls how alert labels are converted to ntfy tags
-      # If not specified, defaults to: {{range $key, $value := .}}{{$key}} = {{$value}}, {{end}}
       labels: |
-        {{range $key, $value := .}}{{$key}} = {{$value}}{{end}}
-      # Alternative examples:
-      #
-      # Empty template to disable label tags entirely:
-      # labels: ""
-      #
-      # Custom format with colons instead of equals:
-      # labels: |
-      #   {{range $key, $value := .}}{{$key}}: {{$value}}{{end}}
-      #
-      # Complex conditional template to only show specific labels:
-      # labels: |
-      #   {{- range $key, $value := . -}}
-      #     {{- if and (ne $key "internal_label") (ne $key "debug_info") -}}
-      #       {{ $key }}={{ $value }}
-      #     {{- end -}}
-      #   {{- end -}}
-      #
-      # Or show labels only if severity is high:
-      # labels: |
-      #   {{- if eq (index . "severity") "critical" -}}
-      #     {{- range $key, $value := . -}}
-      #       {{ $key }}={{ $value }}
-      #     {{- end -}}
-      #   {{- end -}}
+        {{range $key, $value := .}}{{$key}} = {{$value}}, {{end}}
       headers:
         X-Click: |
           {{ .GeneratorURL }}
