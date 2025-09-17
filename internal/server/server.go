@@ -177,7 +177,16 @@ func (s *Server) forwardAlert(logger *zap.Logger, alert *alertmanager.Alert) err
 
 		tags = append(tags, tag.Tag)
 	}
-	tags = append(tags, convertLabelsToTags(alert.Labels)...)
+	// Add labels using template if configured, otherwise use default format
+	labelTags, err := s.renderLabelsTemplate(alert)
+	if err != nil {
+		logger.Warn(
+			"Labels template rendering failed, falling back to default format",
+			zap.Error(err),
+		)
+		labelTags = convertLabelsToTags(alert.Labels)
+	}
+	tags = append(tags, labelTags...)
 
 	if title != "" {
 		req.Header.Set("X-Title", title)
@@ -256,4 +265,34 @@ func evalStringExpr(expr *config.StringExpression, alert *alertmanager.Alert) (s
 	}
 
 	return expr.Text, nil
+}
+
+func (s *Server) renderLabelsTemplate(alert *alertmanager.Alert) ([]string, error) {
+	// If no labels template is configured, use the default behavior
+	if s.cfg.Ntfy.Notification.Templates.Labels == nil {
+		return convertLabelsToTags(alert.Labels), nil
+	}
+
+	var labelsBuf bytes.Buffer
+	if err := (*template.Template)(s.cfg.Ntfy.Notification.Templates.Labels).Execute(&labelsBuf, alert.Labels); err != nil {
+		return nil, fmt.Errorf("render labels template: %w", err)
+	}
+
+	renderedLabels := strings.TrimSpace(labelsBuf.String())
+
+	// If the template renders to an empty string, return no tags
+	if renderedLabels == "" {
+		return []string{}, nil
+	}
+
+	// Split the rendered output by comma and clean up each tag
+	var tags []string
+	for _, tag := range strings.Split(renderedLabels, tagSeparator) {
+		tag = strings.TrimSpace(tag)
+		if tag != "" {
+			tags = append(tags, tag)
+		}
+	}
+
+	return tags, nil
 }

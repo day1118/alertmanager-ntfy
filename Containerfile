@@ -4,6 +4,10 @@ ARG TARGETOS TARGETARCH
 RUN apk add -U --no-cache ca-certificates tzdata
 
 WORKDIR /build
+
+COPY go.mod go.sum /build/
+RUN go mod download -x
+
 COPY ./ ./
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build github.com/alexbakker/alertmanager-ntfy/cmd/alertmanager-ntfy
 

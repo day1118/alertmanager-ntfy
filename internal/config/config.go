@@ -16,6 +16,23 @@ var (
 
 	// Source: https://github.com/binwiederhier/ntfy/blob/30301c8a7ff9e54ae505daf73a7f1571e7fefae3/user/types.go#L245
 	allowedTopicRegex = regexp.MustCompile(`^[-_A-Za-z0-9]{1,64}$`)
+
+	// Custom template functions
+	templateFuncs = template.FuncMap{
+		// String manipulation
+		"split":     strings.Split,
+		"join":      strings.Join,
+		"trim":      strings.TrimSpace,
+		"lower":     strings.ToLower,
+		"upper":     strings.ToUpper,
+		"contains":  strings.Contains,
+		"hasPrefix": strings.HasPrefix,
+		"hasSuffix": strings.HasSuffix,
+		"replace":   func(old, new, s string) string { return strings.ReplaceAll(s, old, new) },
+
+		// Formatting
+		"printf": fmt.Sprintf,
+	}
 )
 
 type Template template.Template
@@ -28,6 +45,7 @@ type Expression struct {
 type Templates struct {
 	Title       *Template            `yaml:"title"`
 	Description *Template            `yaml:"description"`
+	Labels      *Template            `yaml:"labels"`
 	Headers     map[string]*Template `yaml:headers`
 }
 
@@ -80,7 +98,8 @@ type Config struct {
 func (t *Template) UnmarshalText(text []byte) error {
 	s := strings.TrimSpace(string(text))
 
-	tmpl, err := template.New("").Parse(s)
+	// Create template with custom functions
+	tmpl, err := template.New("").Funcs(templateFuncs).Parse(s)
 	if err != nil {
 		return err
 	}
