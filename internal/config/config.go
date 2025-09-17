@@ -6,10 +6,22 @@ import (
 	"strings"
 	"text/template"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/PaesslerAG/gval"
 	"go.uber.org/zap"
 )
+
+// capitalize returns a copy of the string with the first character converted to uppercase
+// and the rest unchanged.
+func capitalize(s string) string {
+	if s == "" {
+		return s
+	}
+	r, size := utf8.DecodeRuneInString(s)
+	return string(unicode.ToUpper(r)) + s[size:]
+}
 
 var (
 	exprLang = gval.Full()
@@ -18,20 +30,21 @@ var (
 	allowedTopicRegex = regexp.MustCompile(`^[-_A-Za-z0-9]{1,64}$`)
 
 	// Custom template functions
-	templateFuncs = template.FuncMap{
-		// String manipulation
-		"split":     strings.Split,
-		"join":      strings.Join,
-		"trim":      strings.TrimSpace,
-		"lower":     strings.ToLower,
-		"upper":     strings.ToUpper,
-		"contains":  strings.Contains,
-		"hasPrefix": strings.HasPrefix,
-		"hasSuffix": strings.HasSuffix,
-		"replace":   func(old, new, s string) string { return strings.ReplaceAll(s, old, new) },
+	TemplateFuncs = template.FuncMap{
+	// String manipulation
+	"split":      strings.Split,
+	"join":       strings.Join,
+	"trim":       strings.TrimSpace,
+	"lower":      strings.ToLower,
+	"upper":      strings.ToUpper,
+	"capitalize": capitalize,
+	"contains":   strings.Contains,
+	"hasPrefix":  strings.HasPrefix,
+	"hasSuffix":  strings.HasSuffix,
+	"replace":    func(old, new, s string) string { return strings.ReplaceAll(s, old, new) },
 
-		// Formatting
-		"printf": fmt.Sprintf,
+	// Formatting
+	"printf": fmt.Sprintf,
 	}
 )
 
@@ -99,7 +112,7 @@ func (t *Template) UnmarshalText(text []byte) error {
 	s := strings.TrimSpace(string(text))
 
 	// Create template with custom functions
-	tmpl, err := template.New("").Funcs(templateFuncs).Parse(s)
+	tmpl, err := template.New("").Funcs(TemplateFuncs).Parse(s)
 	if err != nil {
 		return err
 	}
