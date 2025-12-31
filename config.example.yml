@@ -30,6 +30,10 @@ ntfy:
         {{ if eq .Status "resolved" }}Resolved: {{ end }}{{ index .Annotations "summary" }}
       description: |
         {{ index .Annotations "description" }}
+      # Labels template controls how alert labels are converted to ntfy tags.
+      # If not specified, uses the default format: key = value
+      labels: |
+        {{range $key, $value := .}}{{$key}} = {{$value}}, {{end}}
       headers:
         X-Click: |
           {{ .GeneratorURL }}
